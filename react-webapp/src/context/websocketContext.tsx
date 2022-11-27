@@ -78,7 +78,7 @@ export const WebsocketProvider = ({ children }) => {
     if (isPaused) return
     try {
       const message: wsMessage = JSON.parse(e.data)
-      console.log("e", message)
+      // console.log("e", message)
       messageMapping(message)
     } catch (err) {
       console.error("cannot parse message", { err, data: e.data })
@@ -86,8 +86,13 @@ export const WebsocketProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    if (!ws.current) return
-    ws.current.onmessage = handleOnMessage
+    if (!ws.current) {
+      console.log("no websocket, no on message")
+    } else {
+      console.log("we have websocket, on message registered")
+      ws.current.onmessage = handleOnMessage
+      // ws.current.addEventListener("onmessage", handleOnMessage)
+    }
 
     return () => {
       // not sure if needed, but better to remove event listener for safety/memory reason
@@ -95,7 +100,7 @@ export const WebsocketProvider = ({ children }) => {
       ws.current?.removeEventListener("onmessage", handleOnMessage)
     }
     // event listener has to be re-created, otherwise wsClientList will contain old values
-  }, [isPaused, wsClientList])
+  }, [isPaused])
 
   const sendClientName = () => {
     if (!ws.current || wsClientId === "") return
@@ -195,11 +200,8 @@ export const WebsocketProvider = ({ children }) => {
       case "clientListUpdate":
         handleClientListUpdate(m)
         break
-      //session handlers
-      case "sessionCreated":
-        break
       default:
-        console.log("default", m)
+      // console.log("default", m)
     }
   }
 

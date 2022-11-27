@@ -16,10 +16,16 @@ type (
 	// }
 
 	wsSession struct {
-		Id         string   `json:"id"`
-		Name       string   `json:"name"`
-		OwnerId    *string  `json:"ownerId"`
-		ClientList []Client `json:"clientList"`
+		Id         string            `json:"id"`
+		Name       string            `json:"name"`
+		OwnerId    *string           `json:"ownerId"`
+		ClientList map[string]Client `json:"clientList"`
+		Token      string            `json:"token"`
+	}
+
+	wsSessionMsgBody struct {
+		SessionId *string `json:"sessionId"`
+		Token     *string `json:"token"`
 	}
 
 	wsMessage struct {

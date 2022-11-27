@@ -18,7 +18,7 @@ var (
 // clients.
 type Hub struct {
 	// Registered clients.
-	clients map[*Client]bool
+	clients map[string]*Client
 
 	// Active sessions.
 	sessions map[string]wsSession
@@ -40,47 +40,9 @@ func newHub() *Hub {
 		broadcast:  make(chan wsMessage),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
+		clients:    make(map[string]*Client),
 		sessions:   make(map[string]wsSession),
 	}
-}
-
-func broadcastClientList(sessionId *string) {
-	// if sessionId == nil {
-	// 	return
-	// }
-	var clientList []Client
-
-	for client := range hub.clients {
-		log.Println("adding client to list", client, *client)
-		log.Println("adding client to list", *client)
-		clientList = append(clientList, *client)
-	}
-
-	clb, _ := json.Marshal(clientList)
-
-	clientId := "Server"
-	var newMessage wsMessage = wsMessage{MessageBody: string(clb), MessageType: "clientListUpdate", ClientId: &clientId, SessionId: sessionId, TargetClientId: nil}
-
-	msg, _ := json.Marshal(newMessage)
-
-	// hub.broadcast <- msg
-	log.Println("broadcastClientList", sessionId, clientList, string(msg))
-
-	// hub.broadcast <- newMessage
-
-	for client := range hub.clients {
-		if newMessage.SessionId == client.SessionId {
-
-			if err := client.conn.WriteMessage(1, msg); err != nil {
-				log.Println("error write:", err)
-				// break
-			}
-		} else {
-			log.Println("client not part of session", newMessage, client)
-		}
-	}
-
 }
 
 func (h *Hub) run() {
@@ -91,7 +53,7 @@ func (h *Hub) run() {
 		select {
 		case client := <-h.register:
 			log.Println("new client registered")
-			h.clients[client] = true
+			h.clients[client.Id] = client
 
 			var wsm wsMessage = wsMessage{MessageBody: client.Id, MessageType: "connectMessage", ClientId: &client.Id, SessionId: nil, TargetClientId: nil}
 
@@ -102,42 +64,33 @@ func (h *Hub) run() {
 				// break
 			}
 		case client := <-h.unregister:
-			var sId *string = client.SessionId
-			if _, ok := h.clients[client]; ok {
-				log.Println("client unregistered", client.Id)
-				delete(h.clients, client)
+			var cId string = client.Id
+			var sId *string = h.clients[client.Id].SessionId
+			log.Printf("client %#v\n", client)
+			if _, ok := h.clients[client.Id]; ok {
+				log.Println("client unregistered", client.Id, client.SessionId)
+				delete(h.clients, client.Id)
 				close(client.send)
-				broadcastClientList(sId)
+				if sId != nil {
+					clientDisconnectedFromSession(cId, *sId)
+				} else {
+					log.Println("no session id", client)
+				}
+				// broadcastClientList(sId)
 			}
 		case message := <-h.broadcast:
 			log.Println("got message to send", message, h.clients)
 			msg, _ := json.Marshal(message)
-			for client := range h.clients {
+			for _, client := range h.clients {
 				log.Println("loop client", client)
 				select {
 				case client.send <- msg:
 
-					// w, err := client.conn.NextWriter(websocket.TextMessage)
-					// if err != nil {
-					// 	log.Println("error", err)
-					// 	return
-					// }
-					// log.Println("want to send message to", client)
-					// w.Write(message)
-					// // Add queued chat messages to the current websocket message.
-					// n := len(client.send)
-					// for i := 0; i < n; i++ {
-					// 	w.Write(newline)
-					// 	w.Write(<-client.send)
-					// }
-
-					// if err := w.Close(); err != nil {
-					// 	return
-					// }
-
 					if message.TargetClientId != nil {
-						if message.TargetClientId == &client.Id {
+						log.Println("message targetclientId?", *message.TargetClientId, client.Id)
+						if *message.TargetClientId == client.Id {
 
+							log.Println("writing message to target id")
 							if err := client.conn.WriteMessage(mt, msg); err != nil {
 								log.Println("error write:", err)
 								// break
@@ -158,7 +111,7 @@ func (h *Hub) run() {
 					}
 				default:
 					close(client.send)
-					delete(h.clients, client)
+					delete(h.clients, client.Id)
 				}
 			}
 			log.Println("current clients", len(hub.clients), hub.clients)

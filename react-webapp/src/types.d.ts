@@ -15,8 +15,10 @@ interface wsMessage {
 }
 
 interface wsSession {
-  sessionId: string
+  id: string
   name: string
   ownerId: string
-  clientList: wsClient[]
+  clientList: Map<string, wsClient>
+  token?: string
+  // clientList: wsClient[]
 }

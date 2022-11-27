@@ -22,15 +22,15 @@ var (
 
 // }
 
-func processMessage(wsm wsMessage) {
+func processMessage(wsm wsMessage, client Client) {
 	switch messageType := wsm.MessageType; messageType {
 	case "notification":
 		log.Println("we got notification", wsm)
 		hub.broadcast <- wsm
 	case "session":
-		handleSession(wsm)
+		handleSession(wsm, client)
 	case "updateName":
-		for client := range hub.clients {
+		for _, client := range hub.clients {
 			if client.Id == *wsm.ClientId {
 				client.Name = wsm.MessageBody
 			}
@@ -44,16 +44,6 @@ func main() {
 	app := fiber.New()
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
-		// IsWebSocketUpgrade returns true if the client
-		// requested upgrade to the WebSocket protocol.
-		if websocket.IsWebSocketUpgrade(c) {
-			c.Locals("allowed", true)
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
-
-	app.Use("/ws2", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -89,7 +79,7 @@ func main() {
 		)
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				log.Println("error read:", err)
+				log.Println("error read:", err, client)
 				if strings.Contains(err.Error(), "websocket: close") {
 					client.hub.unregister <- client
 				}
@@ -105,7 +95,7 @@ func main() {
 				return
 			}
 
-			processMessage(wsm)
+			processMessage(wsm, *client)
 
 			// if err = c.WriteMessage(mt, msg); err != nil {
 			// 	log.Println("error write:", err)
