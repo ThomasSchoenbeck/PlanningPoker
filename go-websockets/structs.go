@@ -6,26 +6,29 @@ import (
 )
 
 type (
-	wsClient struct {
-		Id             string  `json:"id"`
-		Name           string  `json:"name"`
-		Connected      bool    `json:"connected"`
-		SessionId      *string `json:"sessionId"`
-		OwnerSessionId *string `json:"ownerSessionId"`
-		Conn           *websocket.Conn
-	}
+	// wsClient struct {
+	// 	Id             string  `json:"id"`
+	// 	Name           string  `json:"name"`
+	// 	Connected      bool    `json:"connected"`
+	// 	SessionId      *string `json:"sessionId"`
+	// 	OwnerSessionId *string `json:"ownerSessionId"`
+	// 	Conn           *websocket.Conn
+	// }
 
 	wsSession struct {
-		Id      string  `json:"id"`
-		Name    string  `json:"name"`
-		OwnerId *string `json:"ownerId"`
+		Id         string   `json:"id"`
+		Name       string   `json:"name"`
+		OwnerId    *string  `json:"ownerId"`
+		ClientList []Client `json:"clientList"`
 	}
 
 	wsMessage struct {
-		MessageBody    string  `json:"messageBody"`
-		MessageType    string  `json:"messageType"`
-		ClientId       *string `json:"clientId"`
-		SessionId      *string `json:"sessionId"`
+		MessageBody   string  `json:"messageBody"`
+		MessageType   string  `json:"messageType"`
+		MessageAction *string `json:"messageAction"`
+		ClientId      *string `json:"clientId"`
+		SessionId     *string `json:"sessionId"`
+		// if target client id msg is only for that specific client
 		TargetClientId *string `json:"targetClientId"`
 	}
 

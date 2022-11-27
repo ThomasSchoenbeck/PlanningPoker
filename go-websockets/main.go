@@ -27,6 +27,8 @@ func processMessage(wsm wsMessage) {
 	case "notification":
 		log.Println("we got notification", wsm)
 		hub.broadcast <- wsm
+	case "session":
+		handleSession(wsm)
 	case "updateName":
 		for client := range hub.clients {
 			if client.Id == *wsm.ClientId {

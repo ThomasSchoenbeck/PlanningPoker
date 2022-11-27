@@ -20,6 +20,9 @@ type Hub struct {
 	// Registered clients.
 	clients map[*Client]bool
 
+	// Active sessions.
+	sessions map[string]wsSession
+
 	// Inbound messages from the clients.
 	// broadcast chan []byte
 	broadcast chan wsMessage
@@ -38,6 +41,7 @@ func newHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
+		sessions:   make(map[string]wsSession),
 	}
 }
 
@@ -130,6 +134,18 @@ func (h *Hub) run() {
 					// if err := w.Close(); err != nil {
 					// 	return
 					// }
+
+					if message.TargetClientId != nil {
+						if message.TargetClientId == &client.Id {
+
+							if err := client.conn.WriteMessage(mt, msg); err != nil {
+								log.Println("error write:", err)
+								// break
+								return
+							}
+						}
+						continue
+					}
 
 					if message.SessionId == client.SessionId {
 
