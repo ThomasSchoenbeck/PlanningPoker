@@ -1,5 +1,6 @@
-import { createContext, useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { generateName } from "../randomNameGenerator"
+import { ClientContext, ClientContextInterface } from "./clientContext"
 
 export interface WebsocketContextInterface {
   ws: React.MutableRefObject<WebSocket | undefined>
@@ -9,8 +10,10 @@ export interface WebsocketContextInterface {
 
 export const WebsocketContext = createContext<WebsocketContextInterface | null>(null)
 
-export const WebsocketProvider = ({ children }) => {
+export const WebsocketProvider = ({ sessionInfo, children }) => {
   const ws = useRef<WebSocket>()
+
+  const { clientName } = useContext(ClientContext) as ClientContextInterface
 
   // ███████ ████████  █████  ████████ ███████ ███████
   // ██         ██    ██   ██    ██    ██      ██
@@ -22,7 +25,7 @@ export const WebsocketProvider = ({ children }) => {
   const [connected, setConnected] = useState<boolean>(false)
   const [wsClientId, setWsClientId] = useState<string>("")
   const [wsMessages, setWsMessages] = useState<wsMessage[]>([])
-  const [clientName, setClientName] = useState<string>(generateName())
+  // const [clientName, setClientName] = useState<string>(generateName())
   const [wsClientList, setWsClientList] = useState<wsClient[]>([])
   const [isPaused, setPause] = useState(false)
 
@@ -54,8 +57,21 @@ export const WebsocketProvider = ({ children }) => {
   //  ███ ███  ███████      ██████  ██████  ██   ████ ██   ████ ███████  ██████    ██
 
   useEffect(() => {
+    console.log("useEffect WebSocketContext", sessionInfo)
+    let websocketConnectString: String = ""
+
+    if (sessionInfo.action === "create") {
+      websocketConnectString = `createSession?clientName=${clientName}`
+    } else if (sessionInfo.action === "join") {
+      if (sessionInfo.token === null) {
+        console.error("missing token")
+        return
+      }
+      websocketConnectString = `${sessionInfo.sessionId}?token=${sessionInfo.token}&clientName=${clientName}`
+    }
+
     console.log("init websocket")
-    ws.current = new WebSocket("ws://localhost:3000/ws/planningPoker?v=1.0")
+    ws.current = new WebSocket("ws://localhost:3000/ws/" + websocketConnectString)
     ws.current.onopen = (e) => handleConnectionOpen(e)
     ws.current.onclose = (e) => handleConnectionClosed(e)
     ws.current.onerror = (e) => handleConnectionError(e)
@@ -224,17 +240,17 @@ export const WebsocketProvider = ({ children }) => {
     }
   }, [])
 
-  useEffect(() => {
-    // once received clientID from server, tell him our name
-    if (wsClientId !== "") {
-      sendClientName()
-    }
-  }, [wsClientId])
+  // useEffect(() => {
+  //   // once received clientID from server, tell him our name
+  //   if (wsClientId !== "") {
+  //     sendClientName()
+  //   }
+  // }, [wsClientId])
 
-  useEffect(() => {
-    // update name when we change it.
-    sendClientName()
-  }, [clientName])
+  // useEffect(() => {
+  //   // update name when we change it.
+  //   sendClientName()
+  // }, [clientName])
 
   return (
     <WebsocketContext.Provider value={{ ws, wsClientId }}>{children}</WebsocketContext.Provider>

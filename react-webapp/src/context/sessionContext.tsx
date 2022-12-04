@@ -5,7 +5,7 @@ import { WebsocketContext, WebsocketContextInterface } from "./websocketContext"
 export interface SessionContextInterface {
   session: wsSession
   setSession: (v: wsSession) => void
-  sendMessage: (action: string, sessionId?: string, token?: string) => void
+  sendMessage: (action: string, sessionId: string, token: string) => void
 }
 
 export const SessionContext = createContext<SessionContextInterface | null>(null)
@@ -26,10 +26,21 @@ export const SessionProvider = ({ children }) => {
     console.log("messageMapping", m)
     switch (m.messageType) {
       //session handlers
-      case "sessionCreated":
+      // case "sessionCreated":
+      //   try {
+      //     let s: wsSession = JSON.parse(m.messageBody)
+      //     console.log("[sessionCreated] s.clientList", s.clientList)
+      //     s.clientList = new Map(Object.entries(s.clientList))
+      //     setSession(s)
+      //   } catch (e) {
+      //     console.error("error parsing session from message", e, m)
+      //     return
+      //   }
+      //   break
+      case "sessionUpdate":
         try {
           let s: wsSession = JSON.parse(m.messageBody)
-          console.log("[sessionCreated] s.clientList", s.clientList)
+          console.log("[sessionUpdate] s.clientList", s.clientList)
           s.clientList = new Map(Object.entries(s.clientList))
           setSession(s)
         } catch (e) {
@@ -37,17 +48,17 @@ export const SessionProvider = ({ children }) => {
           return
         }
         break
-      case "sessionJoined":
-        try {
-          let s: wsSession = JSON.parse(m.messageBody)
-          console.log("[sessionJoined] s.clientList", s.clientList)
-          s.clientList = new Map(Object.entries(s.clientList))
-          setSession(s)
-        } catch (e) {
-          console.error("error parsing session from message", e, m)
-          return
-        }
-        break
+      // case "sessionJoined":
+      //   try {
+      //     let s: wsSession = JSON.parse(m.messageBody)
+      //     console.log("[sessionJoined] s.clientList", s.clientList)
+      //     s.clientList = new Map(Object.entries(s.clientList))
+      //     setSession(s)
+      //   } catch (e) {
+      //     console.error("error parsing session from message", e, m)
+      //     return
+      //   }
+      //   break
       case "sessionWrongToken":
         alert(m.messageBody)
         console.error("wrong token")
@@ -88,10 +99,10 @@ export const SessionProvider = ({ children }) => {
     // event listener has to be re-created, otherwise wsClientList will contain old values
   }, [ws.current])
 
-  const sendMessage = (action: string, sessionId?: string, token?: string) => {
+  const sendMessage = (action: string, sessionId: string, token: string) => {
     let body: Object = {}
-    if (sessionId) body["sessionId"] = sessionId
-    if (token) body["token"] = token
+    body["sessionId"] = sessionId
+    body["token"] = token
 
     if (!ws.current) return
     let newMessage: wsMessage = {

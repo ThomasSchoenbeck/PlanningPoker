@@ -3,12 +3,12 @@ import App from "./App"
 import "./index.css"
 
 import { BrowserRouter } from "react-router-dom"
-import { WebsocketProvider } from "./context/websocketContext"
+import { ClientProvider } from "./context/clientContext"
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <BrowserRouter>
-    <WebsocketProvider>
+    <ClientProvider>
       <App />
-    </WebsocketProvider>
+    </ClientProvider>
   </BrowserRouter>
 )
